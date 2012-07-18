@@ -1,1 +1,69 @@
-Yoo start a game
++------------------+
+|Starting questions|
++------------------+
+111 Bonus EXP 1
+112 Bonus Gil 1
+113 Luck 2
+121 Bonus AP 1
+122 Bonus CP 1
+123 Agility UP 2
+131 Speed UP 2
+132 Power UP 2
+133 Smash Gauge Bonus 1
+211 Agility UP 2
+212 Luck 2
+213 Bonus Gil 1
+221 Smash Gauge Bonus 1
+222 Power UP 2
+223 Bonus CP 1
+231 Speed UP 2
+232 Bonus EXP 1
+233 Bonus AP 1
+311 Bonus Gil 1
+312 Luck 2
+313 Power UP 2
+321 Agility UP 2
+322 Bonus EXP 1
+323 Speed UP 2
+331 Smash Gauge Bonus 1
+332 Bonus CP 1
+333 Bonus AP 1
+
++--------------+
+|Starting chars|
++--------------+
+Race    Class           Lvl     XP      Spd     Atk     Def     Mag     Res     Notes
+-------------------------------------------------------------------------------------
+Hume    Soldier         1       60      57      40      21      15      18      Luso
+Nu Mou  Black Mage      2       ~65     56      26      18      26      26
+Viera   White Mage      3       ~65     61      28      21      24      24
+Bangaa  Warrior         3       0       57      43      26      17      19
+Hume    Archer          2       0       60      30      20      17      21
+Moogle  Thief           3       0       63      37      21      22      19
+
+http://www.gamefaqs.com/ds/937330-final-fantasy-tactics-a2-grimoire-of-the-rift/faqs/53265
+
+STARTING GUYS ROLES/IDEAL PROGRESSION
+-------------------------------------
+Nu Mou Black Mage
+- skills: Time Mage (5x black mage)
+- stats:  1. Alchemist (2x white mage => 4x black mage => 2x illusionist)
+          2. Sage (2x white mage => 2x beast master (QUESTS Knowing the Beast HERE, INCOMPLETE
+          2. Black Mage
+
+
+Viera White Mage
+- skills: Green Mage (1x white mage, QUESTS A Paw Full of Feathers => Green Dominion)
+- stats:  Summoner (2x white mage => 2x elementalist)
+
+Bangaa Warrior
+- skills: Warrior? White Monk? Templar? Whatever
+- stats:  Master Monk (2x warrior, 2x white monk, QUESTS Grounded! => Banbangaa!, visit Fluorgis)
+
+Hume Archer
+-
+-
+
+Moogle Thief
+- skills: Thief
+- stats:  Chocobo Knight
