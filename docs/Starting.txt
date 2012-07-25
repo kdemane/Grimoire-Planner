@@ -1,3 +1,28 @@
+- start game
+- answer 2, 2, 3 for bonus AP 1
+- don't do a goddamn thing with Luso for the first fight, just stand around
+- after this, you will be level 1 with 60 XP
+- pick a guy who's level 3 or lower, and keep him on the side for the first round "real" crew
+- only do plot figthts, until you are done with the one with the tomato stalk
+- at this point, Luso should be level 3, and someone else should be level 2 or 3 that you kept around. Kick everyone else
+  out of the clan
+- walk back and forth between Baptiste Hill and Targ Wood for about 7 hours filling out the clan with 28 more level 3 humes,
+  only get the classes that you will actually use (I'm doing soldier/thief/black mage, shelving archer/white mage because
+  their stats are bad)
+- grind out pub quests/overland encounters with 6 random disposable fools until Luso + 5 other guys (the first "real" party
+  have mastered the 2 or 3 jobs they are going to actually use until ~level 30
+- YOU CAN UNLOCK NINJA AND JUGGLER AT THIS POINT, BEFORE YOU GET ADELLE, AT AVERAGE PARTY LEVEL 3. Not sure about other
+  good leveling classes for other races, have to look into that, but w/e, Luso is hooked up
+- I'm actually mastering every fuckin thing available basically for Luso/other non-hume/4 other humes at this point.. it's
+  not all that much stuff.. seem to have all the loot and I have 4 soldier/4 thief/3 archer/2 hunter/2 paladin, starting
+  black mage/white mage.. that's.. about it..
+- kick out all of the guys who have been leveling up, recruit 6 more level 3 fools
+- do the next plot quest, get Adelle (who should theoretically be level 3 as long as non-lvl 3 levels are 29 or lower)
+- powermow the plot on-level or below-level until you get all the NPC's. If you need to level up + boot/replace another 6
+  man crew, fine, but you need to hold on to as many level 3 dudes as you can
+- once average clan level is 30, recruit the final crew and bust it out.. theoretically, after they have mastered their
+  jobs, boot all the level 3 "marshemellows" and do shit on-level with the hardcore  crew
+
 +------------------+
 |Starting questions|
 +------------------+
@@ -41,6 +66,7 @@ Bangaa  Warrior         3       0       57      43      26      17      19
 Hume    Archer          2       0       60      30      20      17      21
 Moogle  Thief           3       0       63      37      21      22      19
 
+Class prereq flows:
 http://www.gamefaqs.com/ds/937330-final-fantasy-tactics-a2-grimoire-of-the-rift/faqs/53265
 
 STARTING GUYS ROLES/IDEAL PROGRESSION
