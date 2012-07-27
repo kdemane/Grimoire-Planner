@@ -1,11 +1,37 @@
+DROP TABLE IF EXISTS race_job_stat;
+DROP TABLE IF EXISTS stat;
+DROP TABLE IF EXISTS race_job;
+DROP TABLE IF EXISTS job;
 DROP TABLE IF EXISTS race;
 
 CREATE TABLE race (
     id TINYINT(1) UNSIGNED NOT NULL PRIMARY KEY,
-    name CHAR(6) NOT NULL
+    name VARCHAR(6) NOT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE job (
     id TINYINT(1) UNSIGNED NOT NULL PRIMARY KEY,
-    name CHAR(6) NOT NULL
+    name VARCHAR(14) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE race_job (
+    id TINYINT(1) UNSIGNED NOT NULL PRIMARY KEY,
+    race_id TINYINT(1) UNSIGNED NOT NULL,
+    job_id TINYINT(1) UNSIGNED NOT NULL,
+    CONSTRAINT race_job_race_fk FOREIGN KEY (race_id) REFERENCES race (id),
+    CONSTRAINT race_job_job_fk FOREIGN KEY (job_id) REFERENCES job (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE stat (
+    id TINYINT(1) UNSIGNED NOT NULL PRIMARY KEY,
+    name VARCHAR(3) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE race_job_stat (
+    race_job_id TINYINT(1) UNSIGNED NOT NULL,
+    stat_id TINYINT(1) UNSIGNED NOT NULL,
+    initial TINYINT(1) UNSIGNED NOT NULL,
+    growth DECIMAL(4, 2) UNSIGNED NOT NULL,
+    CONSTRAINT race_job_stat_race_job_fk FOREIGN KEY (race_job_id) REFERENCES race_job (id),
+    CONSTRAINT race_job_stat_stat_fk FOREIGN KEY (stat_id) REFERENCES stat (id)
 ) ENGINE=InnoDB;
