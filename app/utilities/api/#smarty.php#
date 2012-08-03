@@ -1,0 +1,14 @@
+<?php
+
+function initialize_smarty()
+{
+    require_once( SMARTY_ROOT.'/libs/Smarty.class.php');
+
+    $smarty = new Smarty();
+    $smarty->config_dir = SMARTY_ROOT.'/configs';
+    $smarty->compile_dir = SMARTY_TEMPLATE_CACHE_ROOT;
+    $smarty->cache_dir = SMARTY_CACHE_ROOT;
+    $smarty->use_sub_dirs = TRUE;
+	$smarty->template_dir = SERVER_ROOT;
+    $smarty->debugging = SMARTY_DEBUG;
+

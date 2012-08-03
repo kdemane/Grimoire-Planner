@@ -1,0 +1,8 @@
+SELECT r.name
+     , j.name
+  FROM race r
+     , job j
+     , race_job rj
+ WHERE r.id = rj.race_id
+   AND j.id = rj.job_id;
+
