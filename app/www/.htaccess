@@ -1,0 +1,6 @@
+RewriteEngine On
+
+RewriteRule ^register$ /index.php?control=user&control_function=register [L]
+RewriteRule ^([a-z_]+)/([a-z_]+)/([a-zA-Z0-9_\.]+)$ /index.php?control=$1&control_function=$2&control_var=$3 [L]
+RewriteRule ^([a-z_]+)/([a-z_]+)$ /index.php?control=$1&control_function=$2 [L]
+RewriteRule ^([a-z_]+)$ /index.php?control=$1 [L]
