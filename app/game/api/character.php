@@ -79,14 +79,101 @@ class character
             return FALSE;
 
         $this->_clear();
+
+        $this->_choose_initial_job();
+    }
+
+    // build query to analyze job stats and what not based on stat priorities
+    private function _choose_initial_job()
+    {
+        $params = array();
+
+        // set up static parts of query before we iterate over stat priorities
+
+        // all this weird spacing is so it looks nice when it gets spat out
+        // for debugging/errors
+        $sql_outer_select = "
+                SELECT v.id rj_id
+                     , (";
+
+        $sql_select = "SELECT rj.id";
+
+        $sql_from = "
+                          FROM race_job rj";
+
+        $sql_where = "
+                         WHERE ";
+
+        $sql_outer_order = ") v
+              ORDER BY (";
+
+        $i = 0; // counter for ANDs and &&'s and stuff
+        foreach ($this->stat_priorities as $priority => $stat)
+        {
+            if (!$i)
+                $top_priority_stat = $stat;
+
+            // there are a bunch of special rules for speed
+            $is_Spd = ($this->stat_map[$stat] == SPD);
+
+            $sql_outer_select .= (($i ? " + " : "") . "v.r_" . $stat);
+
+            $sql_select_addition = ("(rjs_" . $stat . ".growth / (("
+                            . ($is_Spd ? "150" : "999")
+                            . " - rjs_" . $stat . ".initial) / 98)");
+
+            // speed is weighted due to it's being capped at 150 instead of
+            // "250" (999 is the real cap but for calculations in the game
+            // this is quartered and rounded down)
+            if ($is_Spd)
+                $sql_select_addition = ("((" . $sql_select_addition . " * 5) / 3)");
+
+            $sql_select .= ("
+                             , " . $sql_select_addition . ") r_" . $stat);
+
+            $sql_from .= "
+                          JOIN race_job_stat rjs_" . $stat . "
+                            ON rj.id = rjs_" . $stat . ".race_job_id";
+
+            $sql_where .= (($i ? "
+                           AND " : "") . "rjs_" . $stat . ".stat_id = :" . $stat);
+
+            $params[$stat] = $this->stat_map[$stat];
+
+            $sql_outer_order .= (($i ? " && " : "") . "FLOOR(r_" . $stat . ")");
+
+            $i++;
+        }
+
+        $sql_outer_select .= ") r_prio
+                  FROM (";
+
+        if ($this->race)
+        {
+            $sql_where .= "
+                           AND rj.race_id = :race";
+
+            $params['race'] = $this->race_map[$this->race];
+        }
+
+        // wrap up parens and aliases and stuff
+        $sql_outer_order .= ") DESC
+                     , FLOOR(r_" . $top_priority_stat . ") DESC
+                     , r_prio DESC";
+
+        // pull it together
+        $sql = $sql_outer_select
+             . $sql_select
+             . $sql_from
+             . $sql_where
+             . $sql_outer_order;
+
+        die($sql . "\n\n");
     }
 
     private function _validate()
     {
         $ok = TRUE;
-
-        // if (($this->race !== NULL) &&
-        //     !$this->
 
         if (($this->race !== NULL) &&
             !isset($this->race_map[$this->race]))
@@ -123,6 +210,12 @@ class character
 
             $priority_sentinel = $priority;
         }
+
+        // if everything is ok and Speed is not present, add it
+        if (!in_array('Spd', $this->stat_priorities))
+            $this->stat_priorities[$priority + 1] = 'Spd';
+
+        return TRUE;
     }
 
     // this is almost definitely going to have to get moved somewhere else

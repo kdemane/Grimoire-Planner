@@ -7,10 +7,6 @@
             FROM race_job rj
             JOIN race r
               ON rj.race_id = r.id
-            JOIN job j
-              ON rj.job_id = j.id
-            JOIN race_job_stat rjs
-              ON rj.id = rjs.race_job_id
             JOIN race_job_stat rjs_Atk
               ON rj.id = rjs_Atk.race_job_id
             JOIN race_job_stat rjs_Spd
@@ -20,9 +16,8 @@
            WHERE r.id = 1
              AND rjs_Atk.stat_id = 4
              AND rjs_Spd.stat_id = 3
-             AND rjs_Def.stat_id = 5
-        GROUP BY rj.id) v
-ORDER BY ((FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)))
+             AND rjs_Def.stat_id = 5) v
+ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
        , FLOOR(r_Atk) DESC
        , r_prio DESC;
 
