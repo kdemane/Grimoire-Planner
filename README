@@ -1,3 +1,27 @@
-Testing local repo... editing readme... helloooo
+Grimoire Planner is conceptually a clan planning and character optimization aid for the amazing, epic Nintendo DS game Final Fantasy Tactics Advanced 2: Grimoire of the Rift.
 
-testing other repo
+It is in a nascent stage now, but should eventually be a web site (I do own the domain already, whole lot of nothing up there right now) and theoretically will also be a mobile app at some point since:
+
+1. The game that this entire project is about, as mentioned above, is for a portable gaming system and is therefore obviously highly portable.
+
+2. If you are going to use this optimization framework you should, at least in the opinion of its creator, commit to it for maximum benefit. Which I don't really need to go into now but essentially means that any level you "wing" without consulting the algorithm with your latest level and statistical data is a potential loss of endgame points. This risk is directly proportional to the value of the actual level attained: the more levels that remain before the cap, the more time the algorithm has to correct for things going over or under the ideal growth curve, but there are some jobs which you just don't want to level as, ever.
+
+Having said that... it will probably be some time before this is a mobile app, or even a functional web site. Unless they release another FFT[A] game though, there should still be an audience for this. The game's been out as it is since 2008 and I don't intend to stop playing it any time soon. And really I am building this whole thing for myself at the end of the day anyway.
+
+So to be clear about things, this is for min/maxers, munchkins, perfectionists and people with severe OCD. The point of this project is to truly optimize stat growth for a given combination of race and role (or if you want to be more granular than "tank" or "nuker," race combined with a prioritized list of stats for which to optimize. Or if you don't care about jobs, and JUST care about stats, you can provide just the list of stats and the algorithm will decide the best race for you -- this is not recommended though as the ultimate combination of desired/available jobs is fundamental to informing gameplay for a character).
+
+It is probably pretty obvious by now if you are not a fan of this game or the Final Fantasy Tactics (hereafter FFT) system in general, that you probably shouldn't be here. I'm not going to go into any high level explanation of the game or the genre, there are other places for that.
+
+I will now acknowledge that I am aware that there exist efforts on the internet to address this specific problem. Specifically Pakxenon at gamefaqs.com:
+
+http://www.gamefaqs.com/ds/937330-final-fantasy-tactics-a2-grimoire-of-the-rift/faqs/54084
+
+(hopefully I'm not violating any ToS by providing that link)
+
+However, while his work is greatly appreciated and very good, I am hoping to expand upon it in several key ways:
+
+- He does not take into account the random variation that accompanies actual growth with each level. Technically it is impossible to do so with a purely formulaic approach to the problem. I am attempting to reach new and improved margins of optimization by combining a formula for the optimal next level given remaining stat growth and current data with a "servo" approach that reasses real data at each step, as over 98 (or more realistically 69, as most characters are recruited at level 30) levels which can all yield over/under variance up to roughly 20% on each statistic, things can go pear shaped. My original approach in this app was actually to just encode his formulae and build a UI around it, but during testing I found many cases where the randomness inherent in the game (simulated in my tests) caused key stats to veer significantly off the ideal growth curve, resulting in either much "wasted" growth as the main stat was already capped prior to level 99, or a character who was theoretically optimized for a given stat/role but did not actually have that stat near the cap. My algorithm aims to guage actual growth relative to theoretical growth and adjust for where you've netted out with the proverbial dice - allowing you to gain unplanned bonus growth in secondary/tertiary stats if you are doing well, or sacrificing those stats if you are getting hosed to ensure that the primary stat actually ends up maxed, while providing the most possible growth in other desirable stats along the way.
+
+- I want to allow for more than 2 statistics in the prioritized optimization plan. In fact, since Speed is useful for any race and any role, and is just always beneficial, I will infer speed as the "N + 1" priority statistic if it is not explicitly given in the map.
+
+- Hopefully I will end up with a nice UI and a slick site that will also allow you to manage your clan in a centralized, persistent place, and remember who is on track to do what, etc. (Right now I am managing this with a notebook and pages and pages of scrawled notes, which is not ideal).
