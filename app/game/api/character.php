@@ -159,7 +159,8 @@ class character
         // wrap up parens and aliases and stuff
         $sql_outer_order .= ") DESC
                      , FLOOR(r_" . $top_priority_stat . ") DESC
-                     , r_prio DESC";
+                     , r_prio DESC
+                 LIMIT 1";
 
         // pull it together
         $sql = $sql_outer_select
@@ -168,7 +169,8 @@ class character
              . $sql_where
              . $sql_outer_order;
 
-        die($sql . "\n\n");
+        if ($row = $this->db->select_one($sql, $params))
+            return $row['rj_id'];
     }
 
     private function _validate()
