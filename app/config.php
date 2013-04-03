@@ -11,8 +11,5 @@ define('SMARTY_TPL_ROOT',          GP_ROOT . 'tpl_cache/');
 define('SMARTY_TPL_CACHE_ROOT',    SMARTY_TPL_ROOT . 'static/');
 define('SMARTY_TPL_TEMPLATE_ROOT', SMARTY_TPL_ROOT . 'compiled/');
 
-define('DB_HOST',     'localhost');
-define('DB_SCHEMA',   'GP');
-define('DB_USER',     'kdemane');
-define('DB_PASSWORD', 'gr1m01r3');
+require_once SERVER_ROOT . '../config_local.php';
 ?>
