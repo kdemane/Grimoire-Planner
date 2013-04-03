@@ -1,1 +1,4 @@
 - once algorithm is done, implement Pakxenon's algorithm anyway, and compare the two to see how many points I'm eking out
+
+- what about weighting in the query for secondary vs tertiary vs quaternary stats?
+  Maybe just multiple by (1 - 0.5 * N)... or does it need to get weird and scale non linearly?
