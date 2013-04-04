@@ -11,7 +11,8 @@ class character
         $race_id,
         $stat_priorities,
 
-        $job_id,                // operation vars
+        $job,                   // operation vars
+        $job_id,
         $level,
         $HP,
         $MP,
@@ -40,10 +41,17 @@ class character
 
         $this->db = $db;
 
-        $this->race = $race;
+        $this->_initialize();
+
+        if ($race !== NULL)
+        {
+            $this->race = $race;
+            $this->race_id = $this->race_map[$race];
+        }
+
+
         $this->stat_priorities = $stat_priorities;
 
-        $this->_initialize();
     }
 
     private function _initialize()
@@ -66,6 +74,20 @@ class character
                 'id');
     }
 
+    public function display()
+    {
+        print "------------------------------\n";
+        print "Level " . $this->level . " " . $this->race . " " . $this->job . "\n";
+        print "HP   " . $this->HP . "\n";
+        print "MP   " . $this->MP . "\n";
+        print "Spd  " . $this->Spd . "\n";
+        print "Atk  " . $this->Atk . "\n";
+        print "Def  " . $this->Def . "\n";
+        print "Mag  " . $this->Mag . "\n";
+        print "Res  " . $this->Res . "\n";
+        print "------------------------------\n";
+    }
+
     /**
      * Start the character. In most cases, for the ability to "cheese" rolls
      * many times at one moment, characters are recruited at level 30. I will
@@ -86,8 +108,8 @@ class character
         // ok now that we have chosen our job and potentially our race, we
         // need to go through the iterative process of leveling up that many
         // times to actually incur the randomness
-        for ($i = 0; $i < $level; $i++)
-            $this->_level();
+       for ($i = 0; $i < $level; $i++)
+           $this->_level();
     }
 
     /**
@@ -160,17 +182,24 @@ class character
      * data when we simulate this character being created at level 1 as this
      * race doing this job.
      *
-     * 1. SELECT v2.race_id
+     * 1. SELECT v2.race_job_id
+     *         , v2.race_id
+     *         , v2.race
      *         , v2.job_id
-     *         , s.name
+     *         , v2.job
+     *         , s.name stat
      *         , rjs.initial
      * 2.   FROM (SELECT v.race_job_id
      *                 , v.race_id
+     *                 , v.race
      *                 , v.job_id
+     *                 , v.job
      *                 , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
      * 3.           FROM (SELECT rj.id race_job_id
      *                         , rj.race_id
+     *                         , r.name race
      *                         , rj.job_id
+     *                         , j.name job
      *                         , (rjs_Atk.growth /
      *                            ((999 - rjs_Atk.initial) / 98)) r_Atk
      *                         , (rjs_Spd.growth /
@@ -178,6 +207,10 @@ class character
      *                         , (rjs_Def.growth /
      *                            ((999 - rjs_Def.initial) / 98)) r_Def
      *                      FROM race_job rj
+     *                      JOIN race r
+     *                        ON rj.race_id = r.id
+     *                      JOIN job j
+     *                        ON rj.job_id = j.id
      *                      JOIN race_job_stat rjs_Atk
      *                        ON rj.id = rjs_Atk.race_job_id
      *                      JOIN race_job_stat rjs_Spd
@@ -199,39 +232,10 @@ class character
      **/
     private function _choose_initial_job()
     {
-        // all this weird spacing is so it looks nice as a query
+        $sql = array();
 
         // set up static parts of query before we iterate over stat priorities
-        $sql_outer_start = "
-                SELECT v2.race_id
-                     , v2.job_id
-                     , s.name
-                     , rjs.initial
-                  FROM (";
-
-        $sql_middle_select = "SELECT v.race_job_id
-                             , v.race_id
-                             , v.job_id
-                             , (";
-
-        $sql_inner_select = "SELECT rj.id race_job_id
-                                     , rj.race_id
-                                     , rj.job_id";
-
-        $sql_inner_from = "
-                                  FROM race_job rj";
-
-        $sql_inner_where = "
-                                 WHERE ";
-
-        $sql_middle_end = ") v
-                      ORDER BY (";
-
-        $sql_outer_end = ") v2
-                  JOIN race_job_stat rjs
-                    ON v2.race_job_id = rjs.race_job_id
-                  JOIN stat s
-                    ON rjs.stat_id = s.id";
+        $this->_build_initial_job_sql_static($sql);
 
         $params = array();
 
@@ -255,63 +259,69 @@ class character
                                   . " * " . (1 - (0.05 * $i)) . ")");
             }
 
-            $sql_middle_select .= (($i ? " + " : "") . $ratio_segment);
+            $sql['middle_select'] .= (($i ? " + " : "") . $ratio_segment);
 
-            $sql_inner_select .= ("
+            $sql['inner_select'] .= ("
                                      , (rjs_" . $stat . ".growth /
                                         ((" . ($is_Spd ? "150" : "999")
                                   . " - rjs_" . $stat . ".initial) / 98)"
                                   . ($is_Spd ? " * 5 / 3" : "")
                                   . ") r_" . $stat);
 
-            $sql_inner_from .= "
+            $sql['inner_from'] .= "
                                   JOIN race_job_stat rjs_" . $stat . "
                                     ON rj.id = rjs_" . $stat . ".race_job_id";
 
-            $sql_inner_where .= (($i ? "
+            $sql['inner_where'] .= (($i ? "
                                    AND " : "") . "rjs_" . $stat . ".stat_id = :" . $stat);
 
             $params[$stat] = $this->stat_map[$stat];
 
-            $sql_middle_end .= (($i ? " && " : "") . "FLOOR(r_" . $stat . ")");
+            $sql['middle_end'] .= (($i ? " && " : "") . "FLOOR(r_" . $stat . ")");
 
             $i++;
         }
 
         // wrap up parens and aliases and stuff
-        $sql_middle_select .= ") r_prio
+        $sql['middle_select'] .= ") r_prio
                           FROM (";
 
         if ($this->race)
         {
-            $sql_inner_where .= "
+            $sql['inner_where'] .= "
                                    AND rj.race_id = :race";
 
-            $params['race'] = $this->race_map[$this->race];
+            $params['race'] = $this->race_id;
         }
 
-        $sql_middle_end .= ") DESC
+        $sql['middle_end'] .= ") DESC
                              , FLOOR(r_" . $top_priority_stat . ") DESC
                              , r_prio DESC
                          LIMIT 1";
 
         // bring it together
-        $sql = $sql_outer_start
-             . $sql_middle_select
-             . $sql_inner_select
-             . $sql_inner_from
-             . $sql_inner_where
-             . $sql_middle_end
-             . $sql_outer_end;
+        $sql_final = $sql['outer_start']
+                   . $sql['middle_select']
+                   . $sql['inner_select']
+                   . $sql['inner_from']
+                   . $sql['inner_where']
+                   . $sql['middle_end']
+                   . $sql['outer_end'];
 
-        if ($rows = $this->db->select($sql, $params))
+        if ($rows = $this->db->select($sql_final, $params))
         {
             foreach ($rows as $row)
-                $this->{$row['name']} = $row['initial'];
+                $this->{$row['stat']} = $row['initial'];
 
-            $this->race_id = $row['race_id'];
-            $this->job_id  = $row['job_id'];
-            $this->level   = 1;
+            if ($this->race)
+            {
+                $this->race    = $row['race'];
+                $this->race_id = $row['race_id'];
+            }
+
+            $this->job    = $row['job'];
+            $this->job_id = $row['job_id'];
+            $this->level  = 1;
 
             return TRUE;
         }
@@ -319,8 +329,63 @@ class character
         return FALSE;
     }
 
+    private function _build_initial_job_sql_static(&$sql)
+    {
+        $sql['outer_start'] = "
+                SELECT v2.race_job_id
+                     , v2.race_id
+                     , v2.race
+                     , v2.job_id
+                     , v2.job
+                     , s.name stat
+                     , rjs.initial
+                  FROM (";
+
+        $sql['middle_select'] = "SELECT v.race_job_id
+                             , v.race_id
+                             , v.race
+                             , v.job_id
+                             , v.job
+                             , (";
+
+        $sql['inner_select'] = "SELECT rj.id race_job_id
+                                     , rj.race_id
+                                     , r.name race
+                                     , rj.job_id
+                                     , j.name job";
+
+        $sql['inner_from'] = "
+                                  FROM race_job rj
+                                  JOIN race r
+                                    ON rj.race_id = r.id
+                                  JOIN job j
+                                    ON rj.job_id = j.id";
+
+        $sql['inner_where'] = "
+                                 WHERE ";
+
+        $sql['middle_end'] = ") v
+                      ORDER BY (";
+
+        $sql['outer_end'] = ") v2
+                  JOIN race_job_stat rjs
+                    ON v2.race_job_id = rjs.race_job_id
+                  JOIN stat s
+                    ON rjs.stat_id = s.id";
+    }
+
+    /**
+     * Leveling is basically just growing each stat by the appropriate amount
+     * for the current job and then incrementing level.
+     **/
     private function _level()
     {
+        // so let's get our growth
+        $sql = "
+                SELECT
+                  FROM race_job_stat rjs
+                  JOIN race r
+                    ON rjs.race_id = r.id";
     }
 
     private function _validate()
