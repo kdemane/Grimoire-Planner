@@ -8,9 +8,11 @@ class character
         $db,                    // utility class instances
 
         $race,                  // config vars (although race may be NULL)
+        $race_id,
         $stat_priorities,
 
-        $level,                 // operation vars
+        $job_id,                // operation vars
+        $level,
         $HP,
         $MP,
         $Spd,
@@ -40,8 +42,6 @@ class character
 
         $this->race = $race;
         $this->stat_priorities = $stat_priorities;
-
-        ksort($this->stat_priorities);
 
         $this->_initialize();
     }
@@ -80,97 +80,247 @@ class character
 
         $this->_clear();
 
-        $this->_choose_initial_job();
+        if (!$this->_choose_initial_job())
+            $this->_err("Did not find a job, restrictions must be too tight");
+
+        // ok now that we have chosen our job and potentially our race, we
+        // need to go through the iterative process of leveling up that many
+        // times to actually incur the randomness
+        for ($i = 0; $i < $level; $i++)
+            $this->_level();
     }
 
-    // build query to analyze job stats and what not based on stat priorities
+    /**
+     * build query to analyze job stats and what not based on stat priorities
+     *
+     * Ok I think this query (and the code to assemble it) has reached
+     * sufficient complexity to warrant an example of the complete query and
+     * what it does so it's easier to follow construction below. There comes a
+     * point where I believe it is best to transition to query "templates"
+     * included whole for different sets of circumstances, but we're not there
+     * yet, this isn't that hard, the code just looks messy but the final
+     * query looks beautiful!
+     *
+     * Below is an example "roll query" for a Bangaa scrapper AKA melee DPS.
+     * For this build the important stats in priority order are Atk, Spd and
+     * Def.
+     *
+     * The innermost query (starting at 3.) is to find each job available to
+     * the specified race (in this case), or just every possible job in the
+     * case of no race being specificed, and their "ratios" (thus the r_
+     * prefix) for each stat that has been input as a priority. The ratio is
+     * the average growth in that stat for that job compared to the amount of
+     * growth that is required, given that particular job's starting amount in
+     * that stat, to max out that stat at level 99 if all levels were taken in
+     * this job. If the ratio is greater than 1, it is theoretically possible
+     * (barring terrible luck on the random variation) for that job to max
+     * that stat. I believe these to be the most important factors in
+     * determining the ideal initial job. One thing to note is that Speed is a
+     * special attribute with special rules, and since it is capped at 150
+     * instead of 250 it is weighted by that ratio (5/3).
+     * -------------------------------------------------------------------------
+     * The middle query (starting at 2.) is to pick the best job out of all of
+     * these jobs that we have determined are available to our character in
+     * the inner query. There are 3 steps of ordering, the top two of which
+     * are binary on/off filters basically.
+     *
+     * - At 4. there is an "and" of floors for all priority stat ratios. As I
+     *   said earlier, if a ratio is above 1, that job should be able to max
+     *   that stat. So if all desired stats can be maxed by this job, there is
+     *   basically no reason to find another job (unless there are several
+     *   that can do that - this is exceedingly rare). So any jobs that can
+     *   max all desired stats should automatically outrank any jobs that
+     *   cannot.
+     *
+     * - At 5. we take the floor of the #1 priority stat and put jobs that can
+     *   at least max that stat automatically above jobs that cannot. If you
+     *   don't end up with the stat you want the most maxed out, that seems
+     *   like kind of a fail. On the other hand, if you are going for some
+     *   weird build where your race cannot max your primary stat, you still
+     *   want to get a job back and not have the query come back empty, which
+     *   is why it is not in the WHERE clause
+     *
+     * - At 6. we have the sum of all weighted ratios for priority stats. This
+     *   is basically the total payload of stats that you care about, so
+     *   within the list of jobs that are on the highest "tier" in terms of
+     *   being able to max out all priority stats/the top priority stat/no
+     *   priority stats, let's get the one that will net us the most bang for
+     *   our buck in the areas that we care about. I don't think it's
+     *   appropriate to calculate the tiers with weighted ratios, so the
+     *   weighting only comes into play here where we are sorting between jobs
+     *   within the same tier. Coefficients could change based on test data
+     *   but for now I am detracting 5% from the ratio weight for each step
+     *   down in the priority chain.
+     * -------------------------------------------------------------------------
+     * The outer query (starting at 1.) is to actually "hydrate" our
+     * character's stats. It takes the final winner of the race/job contest
+     * that we have decided is best in the middle query, and actually joins
+     * out to the stats tables to get all of the stats (not just priority
+     * stats) to find out exactly where we will be in terms of statistical
+     * data when we simulate this character being created at level 1 as this
+     * race doing this job.
+     *
+     * 1. SELECT v2.race_id
+     *         , v2.job_id
+     *         , s.name
+     *         , rjs.initial
+     * 2.   FROM (SELECT v.race_job_id
+     *                 , v.race_id
+     *                 , v.job_id
+     *                 , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
+     * 3.           FROM (SELECT rj.id race_job_id
+     *                         , rj.race_id
+     *                         , rj.job_id
+     *                         , (rjs_Atk.growth /
+     *                            ((999 - rjs_Atk.initial) / 98)) r_Atk
+     *                         , (rjs_Spd.growth /
+     *                            ((150 - rjs_Spd.initial) / 98) * 5 / 3) r_Spd
+     *                         , (rjs_Def.growth /
+     *                            ((999 - rjs_Def.initial) / 98)) r_Def
+     *                      FROM race_job rj
+     *                      JOIN race_job_stat rjs_Atk
+     *                        ON rj.id = rjs_Atk.race_job_id
+     *                      JOIN race_job_stat rjs_Spd
+     *                        ON rj.id = rjs_Spd.race_job_id
+     *                      JOIN race_job_stat rjs_Def
+     *                        ON rj.id = rjs_Def.race_job_id
+     *                     WHERE rjs_Atk.stat_id = 4
+     *                       AND rjs_Spd.stat_id = 3
+     *                       AND rjs_Def.stat_id = 5
+     *                       AND rj.race_id = 1) v
+     * 4.       ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+     * 5.              , FLOOR(r_Atk) DESC
+     * 6.              , r_prio DESC
+     *             LIMIT 1) v2
+     *      JOIN race_job_stat rjs
+     *        ON v2.race_job_id = rjs.race_job_id
+     *      JOIN stat s
+     *        ON rjs.stat_id = s.id;
+     **/
     private function _choose_initial_job()
     {
-        $params = array();
+        // all this weird spacing is so it looks nice as a query
 
         // set up static parts of query before we iterate over stat priorities
+        $sql_outer_start = "
+                SELECT v2.race_id
+                     , v2.job_id
+                     , s.name
+                     , rjs.initial
+                  FROM (";
 
-        // all this weird spacing is so it looks nice when it gets spat out
-        // for debugging/errors
-        $sql_outer_select = "
-                SELECT v.id rj_id
-                     , (";
+        $sql_middle_select = "SELECT v.race_job_id
+                             , v.race_id
+                             , v.job_id
+                             , (";
 
-        $sql_select = "SELECT rj.id";
+        $sql_inner_select = "SELECT rj.id race_job_id
+                                     , rj.race_id
+                                     , rj.job_id";
 
-        $sql_from = "
-                          FROM race_job rj";
+        $sql_inner_from = "
+                                  FROM race_job rj";
 
-        $sql_where = "
-                         WHERE ";
+        $sql_inner_where = "
+                                 WHERE ";
 
-        $sql_outer_order = ") v
-              ORDER BY (";
+        $sql_middle_end = ") v
+                      ORDER BY (";
 
-        $i = 0; // counter for ANDs and &&'s and stuff
+        $sql_outer_end = ") v2
+                  JOIN race_job_stat rjs
+                    ON v2.race_job_id = rjs.race_job_id
+                  JOIN stat s
+                    ON rjs.stat_id = s.id";
+
+        $params = array();
+
+        // build dynamic query parts
+        $i = 0; // counter for ANDs and +'s and stuff
         foreach ($this->stat_priorities as $priority => $stat)
         {
+            // need this later
             if (!$i)
                 $top_priority_stat = $stat;
 
             // there are a bunch of special rules for speed
             $is_Spd = ($this->stat_map[$stat] == SPD);
 
-            $sql_outer_select .= (($i ? " + " : "") . "v.r_" . $stat);
+            $ratio_segment = "v.r_" . $stat;
 
-            $sql_select_addition = ("(rjs_" . $stat . ".growth / (("
-                            . ($is_Spd ? "150" : "999")
-                            . " - rjs_" . $stat . ".initial) / 98)");
+            if ($i)
+            {
+                // weighting
+                $ratio_segment = ("(" . $ratio_segment
+                                  . " * " . (1 - (0.05 * $i)) . ")");
+            }
 
-            // speed is weighted due to it's being capped at 150 instead of
-            // "250" (999 is the real cap but for calculations in the game
-            // this is quartered and rounded down)
-            if ($is_Spd)
-                $sql_select_addition = ("((" . $sql_select_addition . " * 5) / 3)");
+            $sql_middle_select .= (($i ? " + " : "") . $ratio_segment);
 
-            $sql_select .= ("
-                             , " . $sql_select_addition . ") r_" . $stat);
+            $sql_inner_select .= ("
+                                     , (rjs_" . $stat . ".growth /
+                                        ((" . ($is_Spd ? "150" : "999")
+                                  . " - rjs_" . $stat . ".initial) / 98)"
+                                  . ($is_Spd ? " * 5 / 3" : "")
+                                  . ") r_" . $stat);
 
-            $sql_from .= "
-                          JOIN race_job_stat rjs_" . $stat . "
-                            ON rj.id = rjs_" . $stat . ".race_job_id";
+            $sql_inner_from .= "
+                                  JOIN race_job_stat rjs_" . $stat . "
+                                    ON rj.id = rjs_" . $stat . ".race_job_id";
 
-            $sql_where .= (($i ? "
-                           AND " : "") . "rjs_" . $stat . ".stat_id = :" . $stat);
+            $sql_inner_where .= (($i ? "
+                                   AND " : "") . "rjs_" . $stat . ".stat_id = :" . $stat);
 
             $params[$stat] = $this->stat_map[$stat];
 
-            $sql_outer_order .= (($i ? " && " : "") . "FLOOR(r_" . $stat . ")");
+            $sql_middle_end .= (($i ? " && " : "") . "FLOOR(r_" . $stat . ")");
 
             $i++;
         }
 
-        $sql_outer_select .= ") r_prio
-                  FROM (";
+        // wrap up parens and aliases and stuff
+        $sql_middle_select .= ") r_prio
+                          FROM (";
 
         if ($this->race)
         {
-            $sql_where .= "
-                           AND rj.race_id = :race";
+            $sql_inner_where .= "
+                                   AND rj.race_id = :race";
 
             $params['race'] = $this->race_map[$this->race];
         }
 
-        // wrap up parens and aliases and stuff
-        $sql_outer_order .= ") DESC
-                     , FLOOR(r_" . $top_priority_stat . ") DESC
-                     , r_prio DESC
-                 LIMIT 1";
+        $sql_middle_end .= ") DESC
+                             , FLOOR(r_" . $top_priority_stat . ") DESC
+                             , r_prio DESC
+                         LIMIT 1";
 
-        // pull it together
-        $sql = $sql_outer_select
-             . $sql_select
-             . $sql_from
-             . $sql_where
-             . $sql_outer_order;
+        // bring it together
+        $sql = $sql_outer_start
+             . $sql_middle_select
+             . $sql_inner_select
+             . $sql_inner_from
+             . $sql_inner_where
+             . $sql_middle_end
+             . $sql_outer_end;
 
-        if ($row = $this->db->select_one($sql, $params))
-            return $row['rj_id'];
+        if ($rows = $this->db->select($sql, $params))
+        {
+            foreach ($rows as $row)
+                $this->{$row['name']} = $row['initial'];
+
+            $this->race_id = $row['race_id'];
+            $this->job_id  = $row['job_id'];
+            $this->level   = 1;
+
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    private function _level()
+    {
     }
 
     private function _validate()
