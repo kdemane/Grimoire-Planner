@@ -61,10 +61,10 @@ class db
 
         $limit = $this->check_params($params);
 
-        if(isset($limit["count"]) &&
-           isset($limit["start"]))
+        if (isset($limit["count"]) &&
+            isset($limit["start"]))
             $sql .= " " . make_limit_sql(array($limit["start"], $limit["count"]));
-        elseif(isset($limit["count"]))
+        elseif (isset($limit["count"]))
             $sql .= " " . make_limit_sql($limit["count"]);
 
         if ($result = $this->prepare($sql, $params) &&
@@ -84,18 +84,18 @@ class db
             if (!(isset($rows) && is_array($rows)))
                 $rows = array();
         }
-        elseif(isset($result) &&
-               !$result)
+        elseif (isset($result) &&
+                !$result)
         {
-            if($this->_prepare_retry_query())
+            if ($this->_prepare_retry_query())
                 return $this->select($sql, $params, $return_array_of_ids);
 
             $this->err(array($sql, $params));
             return FALSE;
         }
 
-        if(isset($rows) &&
-           !is_array($rows))
+        if (isset($rows) &&
+            !is_array($rows))
         {
             $this->err(array($sql, $params, "returned result was not an array"));
             return FALSE;
@@ -103,7 +103,7 @@ class db
 
         $this->num_rows = @count($rows);
 
-        if(count(@$rows) == 0)
+        if (count(@$rows) == 0)
         {
             unset($this->sth);
             return NULL;
@@ -127,15 +127,15 @@ class db
     {
         $this->errors = NULL;
 
-        if(!$this->prepare($sql, $params))
+        if (!$this->prepare($sql, $params))
             return FALSE;
 
         if (is_scalar($params))
             $params = array($params);
 
-        if(!$this->execute($sql, $params))
+        if (!$this->execute($sql, $params))
         {
-            if($this->_prepare_retry_query())
+            if ($this->_prepare_retry_query())
                 return $this->query($sql, $params, $return_num_affected_rows);
 
             $this->err(array($sql, $params));
@@ -153,21 +153,23 @@ class db
         return TRUE;
     }
 
-    function fetch($sql, $params = null)
+    function fetch($sql,
+                   $params = null,
+                   $return_sth = FALSE)
     {
-        if(is_object($sql))
+        if (is_object($sql))
             $this->sth = $sql;
 
         if (!isset($this->sth))
         {
-            if(!$this->prepare($sql, $params))
+            if (!$this->prepare($sql, $params))
                 return FALSE;
 
             $this->check_params($params);
 
             if (!$this->execute($sql, $params))
             {
-                if($this->_prepare_retry_query())
+                if ($this->_prepare_retry_query())
                     return $this->fetch($sql, $params, $return_sth);
 
                 $this->err(array($sql, $params));
@@ -175,12 +177,12 @@ class db
             }
         }
 
-        if($return_sth === TRUE)
+        if ($return_sth === TRUE)
             return $this->sth;
 
         if ($row = $this->sth->fetch(PDO::FETCH_ASSOC))
         {
-            if(!is_array($row))
+            if (!is_array($row))
             {
                 $this->err(array($sql, $params, "returned result was not an array"));
                 return FALSE;
@@ -200,9 +202,9 @@ class db
     {
         $error_info = $this->sth->errorInfo();
 
-        if(!isset($error_info[1]) ||
-           $this->num_connects > 2 ||
-           $error_info[1] != self::ERROR_MYSQL_GONE_AWAY)
+        if (!isset($error_info[1]) ||
+            $this->num_connects > 2 ||
+            $error_info[1] != self::ERROR_MYSQL_GONE_AWAY)
         {
             return FALSE;
         }
@@ -226,7 +228,7 @@ class db
 
         $this->errors = NULL;
 
-        if(!$this->sth = $this->dbh->prepare($sql))
+        if (!$this->sth = $this->dbh->prepare($sql))
             return FALSE;
 
         return TRUE;
@@ -242,7 +244,7 @@ class db
     {
         $this->errors["error"] = $error;
 
-        if(@is_object($this->sth))
+        if (@is_object($this->sth))
         {
             $sth_errors = $this->sth->errorInfo();
 
@@ -283,7 +285,7 @@ class db
 
     function draw_debug_trace($trace, $depth = 3)
     {
-        if(count($trace) < $depth)
+        if (count($trace) < $depth)
             $depth = count($trace);
 
         $pre = "";
