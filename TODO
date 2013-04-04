@@ -2,3 +2,6 @@
 
 - what about weighting in the query for secondary vs tertiary vs quaternary stats?
   Maybe just multiple by (1 - 0.5 * N)... or does it need to get weird and scale non linearly?
+
+- Figure out diminishing returns algorithm for primary stat getting too ahead of curve
+  http://lostsouls.org/grimoire_diminishing_returns#php

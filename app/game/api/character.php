@@ -22,6 +22,7 @@ class character
         $Def,
         $Mag,
         $Res,
+        $wasted_points,
 
         $race_map,              // reference maps
         $stat_map;
@@ -58,6 +59,8 @@ class character
     private function _initialize()
     {
         $this->_init_ref_data();
+
+        $this->wasted_points = array();
     }
 
     private function _init_ref_data()
@@ -87,6 +90,16 @@ class character
         print "Mag  " . $this->Mag . "\n";
         print "Res  " . $this->Res . "\n";
         print "------------------------------\n";
+
+        if (!empty($this->wasted_points))
+        {
+            print "WASTED POINTS!!!\n";
+            foreach ($this->wasted_points as $stat => $num_points)
+            {
+                print $stat . ": " . $num_points . "\n";
+            }
+            print ":(\n";
+        }
     }
 
     // Do the whole thing
@@ -389,11 +402,106 @@ class character
 
     /**
      * Ok this is the "servo" part where we need to adjust for randomness...
-     * although I think perhaps the same idea from _choose_initial_job just
-     * modified for current levels may even work..
+     * This is pretty similar to _choose_initial_job, but until I can verify
+     * that this algorithm works I'm going to hold off on refactoring the two
+     * functions against duplication, may end up being radically different
      **/
     private function _choose_next_job()
     {
+        $params = array();
+
+        $sql_outer_select = "
+                SELECT v.race_job_id
+                     , v.job_id
+                     , v.job
+                     , (";
+
+        $sql_inner_select = "SELECT rj.id race_job_id
+                             , rj.job_id
+                             , j.name job";
+
+        $sql_inner_from = "
+                          FROM race_job rj
+                          JOIN job j
+                            ON rj.job_id = j.id";
+
+        $sql_inner_where = "
+                         WHERE rj.race_id = :race_id";
+
+        $sql_outer_end = ") v
+              ORDER BY r_prio DESC
+                 LIMIT 1";
+
+        $params['race_id'] = $this->race_id;
+
+        $ll = LEVEL_CAP - $this->level;
+
+        $ratio_threshold = 1.5;
+
+        $i = 0;
+        foreach ($this->stat_priorities as $priority => $stat)
+        {
+            $r_alias = "v.r_" . $stat;
+
+            $is_Spd = ($this->stat_map[$stat] == SPD);
+
+            $ratio_segment = "(" . $r_alias . " - (" . $r_alias . " > " . $ratio_threshold . ") * 1)";
+
+            if ($i)
+            {
+                // weighting
+                $ratio_segment = ("(" . $ratio_segment
+                                  . " * " . (1 - (0.05 * $i)) . ")");
+            }
+
+            $sql_outer_select .= (($i ? " + " : "") . $ratio_segment);
+
+            $sql_inner_select .= ("
+                             , (rjs_" . $stat . ".growth /
+                                ((" . ($is_Spd
+                                       ? STAT_CAP_SPEED
+                                       : STAT_CAP_GENERAL)
+                                  . " - " . $this->{$stat} . ") / "
+                                  . $ll . ")"
+                                  . ($is_Spd ? " * 5 / 3" : "")
+                                  . ") r_" . $stat);
+
+            $sql_inner_from .= "
+                          JOIN race_job_stat rjs_" . $stat . "
+                            ON rj.id = rjs_" . $stat . ".race_job_id";
+
+            $sql_inner_where .= "
+                           AND rjs_" . $stat . ".stat_id = :" . $stat;
+
+            $params[$stat] = $this->stat_map[$stat];
+
+            $i++;
+        }
+
+        $sql_outer_select .= ") r_prio
+                  FROM (";
+
+        $sql = $sql_outer_select
+             . $sql_inner_select
+             . $sql_inner_from
+             . $sql_inner_where
+             . $sql_outer_end;
+
+        if ($row = $this->db->select_one($sql, $params))
+        {
+            // print "r_Atk: " . round($row['r_Atk'], 2) . "  "
+            //     . "r_Spd: " . round($row['r_Spd'], 2) . "  "
+            //     . "r_Def: " . round($row['r_Def'], 2) . "  ";
+            //     . "d_Atk: " . round($row['d_Atk'], 2) . "  "
+            //     . "d_Spd: " . round($row['d_Spd'], 2) . "  "
+            //     . "d_Def: " . round($row['d_Def'], 2) . "  ";
+
+
+            $this->race_job_id = $row['race_job_id'];
+
+            $this->job    = $row['job'];
+            $this->job_id = $row['job_id'];
+        }
     }
 
     // FINISH HIM!!
@@ -434,6 +542,8 @@ class character
             $this->_level_stat($stat, $growth);
 
         $this->level++;
+
+        print $this->level . ": " . $this->job . "\n";
     }
 
     /**
@@ -457,10 +567,24 @@ class character
         if ($this->stat_map[$stat] == SPD)
         {
             $this->Spd += ((100 * $growth) >= mt_rand(1, 100)) ? 1 : 0;
+
+            if ($this->Spd > STAT_CAP_SPEED)
+            {
+                $this->_err("YOU ARE OVER THE SPEED CAP YOU ARE WASTING POINTS!!\n");
+                $this->_waste('Spd', ($this->Spd - STAT_CAP_SPEED));
+                $this->Spd = STAT_CAP_SPEED;
+            }
         }
         else
         {
             $this->{$stat} += $growth + $this->_get_variance($growth);
+
+            if ($this->{$stat} > STAT_CAP_GENERAL)
+            {
+                $this->_err("YOU ARE OVER THE " . $stat . " CAP YOU ARE WASTING POINTS!!\n");
+                $this->_waste($stat, ($this->{$stat} - STAT_CAP_GENERAL));
+                $this->{$stat} = STAT_CAP_GENERAL;
+            }
         }
     }
 
@@ -549,6 +673,22 @@ class character
     {
         print $error;
     }
+
+    private function _waste($stat, $points)
+    {
+        if (isset($this->wasted_points[$stat]))
+            $this->wasted_points[$stat] += $points;
+        else
+            $this->wasted_points[$stat] = $points;
+    }
 }
 
+function diminishing_returns($val, $scale)
+{
+    if($val < 0)
+        return -diminishing_returns(-$val, $scale);
+    $mult = $val / $scale;
+    $trinum = (sqrt(8.0 * $mult + 1.0) - 1.0) / 2.0;
+    return $trinum * $scale;
+}
 ?>
