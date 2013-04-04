@@ -90,7 +90,7 @@ class character
     }
 
     // Do the whole thing
-    public function make($level_to_roll = 30)
+    public function make($level_to_roll = DEFAULT_ROLL_LEVEL)
     {
         $this->roll($level_to_roll);
         $this->_level_to_cap();
@@ -104,7 +104,7 @@ class character
      *
      * Any currently set ops vars are getting thrown out in here
      **/
-    public function roll($level = 30)
+    public function roll($level = DEFAULT_ROLL_LEVEL)
     {
         if (!$this->_validate())
             return FALSE;
@@ -271,10 +271,13 @@ class character
 
             $sql['inner_select'] .= ("
                                      , (rjs_" . $stat . ".growth /
-                                        ((" . ($is_Spd ? "150" : "999")
-                                  . " - rjs_" . $stat . ".initial) / 98)"
-                                  . ($is_Spd ? " * 5 / 3" : "")
-                                  . ") r_" . $stat);
+                                        ((" . ($is_Spd
+                                               ? STAT_CAP_SPEED
+                                               : STAT_CAP_GENERAL)
+                                     . " - rjs_" . $stat . ".initial) / "
+                                     . (LEVEL_CAP - 1) . ")"
+                                     . ($is_Spd ? " * 5 / 3" : "")
+                                     . ") r_" . $stat);
 
             $sql['inner_from'] .= "
                                   JOIN race_job_stat rjs_" . $stat . "
@@ -396,7 +399,7 @@ class character
     // FINISH HIM!!
     private function _level_to_cap()
     {
-        for ($i = $this->level; $i < 99; $i++)
+        for ($i = $this->level; $i < LEVEL_CAP; $i++)
             $this->_level_optimize();
     }
 
