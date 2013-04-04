@@ -23,7 +23,7 @@ class character
         $Mag,
         $Res,
 
-        $race_map,              // ref maps
+        $race_map,              // reference maps
         $stat_map;
 
     /**
@@ -87,6 +87,16 @@ class character
         print "Mag  " . $this->Mag . "\n";
         print "Res  " . $this->Res . "\n";
         print "------------------------------\n";
+    }
+
+    /**
+     * Do the whole thing
+     **/
+    public function make($level_to_roll = 30)
+    {
+        $this->roll($level_to_roll);
+        $this->_level_to_cap();
+        $this->display();
     }
 
     /**
@@ -233,12 +243,11 @@ class character
      **/
     private function _choose_initial_job()
     {
-        $sql = array();
+        $sql    =
+        $params = array();
 
         // set up static parts of query before we iterate over stat priorities
         $this->_build_initial_job_sql_static($sql);
-
-        $params = array();
 
         // build dynamic query parts
         $i = 0; // counter for ANDs and +'s and stuff
@@ -375,6 +384,28 @@ class character
                     ON v2.race_job_id = rjs.race_job_id
                   JOIN stat s
                     ON rjs.stat_id = s.id";
+    }
+
+    /**
+     * Ok this is the "servo" part where we need to adjust for randomness...
+     * although I think perhaps the same idea from _choose_initial_job just
+     * modified for current levels may even work..
+     **/
+    private function _choose_next_job()
+    {
+    }
+
+    // FINISH HIM!!
+    private function _level_to_cap()
+    {
+        for ($i = $this->level; $i < 99; $i++)
+            $this->_level_optimize();
+    }
+
+    private function _level_optimize()
+    {
+        $this->_choose_next_job();
+        $this->_level();
     }
 
     /**

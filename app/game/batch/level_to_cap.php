@@ -12,7 +12,5 @@ $stat_priorities = array(0 => 'Atk',
 
 $c = new character($race, $stat_priorities);
 
-$c->roll(99);
-
-$c->display();
+$c->make();
 ?>
