@@ -11,7 +11,8 @@ class character
         $race_id,
         $stat_priorities,
 
-        $job,                   // operation vars
+        $race_job_id,           // operation vars
+        $job,
         $job_id,
         $level,
         $HP,
@@ -108,8 +109,8 @@ class character
         // ok now that we have chosen our job and potentially our race, we
         // need to go through the iterative process of leveling up that many
         // times to actually incur the randomness
-       for ($i = 0; $i < $level; $i++)
-           $this->_level();
+        for ($i = 0; $i < ($level - 1); $i++)
+            $this->_level();
     }
 
     /**
@@ -313,6 +314,8 @@ class character
             foreach ($rows as $row)
                 $this->{$row['stat']} = $row['initial'];
 
+            $this->race_job_id = $row['race_job_id'];
+
             if ($this->race)
             {
                 $this->race    = $row['race'];
@@ -382,10 +385,66 @@ class character
     {
         // so let's get our growth
         $sql = "
-                SELECT
+                SELECT s.name stat
+                     , rjs.growth
                   FROM race_job_stat rjs
-                  JOIN race r
-                    ON rjs.race_id = r.id";
+                  JOIN stat s
+                    ON rjs.stat_id = s.id
+                 WHERE rjs.race_job_id = :rj_id";
+
+        $stats = array_make_dictionary(
+            $this->db->select($sql,
+                              array('rj_id' => $this->race_job_id)),
+            'stat',
+            'growth');
+
+        foreach ($stats as $stat => $growth)
+            $this->_level_stat($stat, $growth);
+
+        $this->level++;
+    }
+
+    /**
+     * once again, different rules for speed... speed growth is given as a %
+     * chance to gain 1 point of speed, it is not guaranteed like the other
+     * stats
+     *
+     * for all other stats, you add the growth to your current stat value, and
+     * then apply the random variance, which works as follows:
+     *
+     * 1/3 chance: no variance
+     * 1/3 chance: positive variance
+     * 1/3 chance: negative variance
+     *
+     * where if variance is applied in either direction, it is equal to:
+     *
+     * floor((growth + 9) / 10)
+     **/
+    private function _level_stat($stat, $growth)
+    {
+        if ($this->stat_map[$stat] == SPD)
+        {
+            $this->Spd += ((100 * $growth) >= mt_rand(1, 100)) ? 1 : 0;
+        }
+        else
+        {
+            $this->{$stat} += $growth + $this->_get_variance($growth);
+        }
+    }
+
+    private function _get_variance($growth)
+    {
+        $variance = floor(($growth + 9) / 10);
+
+        switch(mt_rand(1, 3))
+        {
+        case 1:
+            return $variance;
+        case 2:
+            return (0 - $variance);
+        case 3:
+            return 0;
+        }
     }
 
     private function _validate()
