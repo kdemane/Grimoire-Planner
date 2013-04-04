@@ -89,9 +89,7 @@ class character
         print "------------------------------\n";
     }
 
-    /**
-     * Do the whole thing
-     **/
+    // Do the whole thing
     public function make($level_to_roll = 30)
     {
         $this->roll($level_to_roll);
@@ -171,7 +169,7 @@ class character
      *   like kind of a fail. On the other hand, if you are going for some
      *   weird build where your race cannot max your primary stat, you still
      *   want to get a job back and not have the query come back empty, which
-     *   is why it is not in the WHERE clause
+     *   is why it is not in the WHERE clause.
      *
      * - At 6. we have the sum of all weighted ratios for priority stats. This
      *   is basically the total payload of stats that you care about, so
@@ -299,9 +297,9 @@ class character
         if ($this->race)
         {
             $sql['inner_where'] .= "
-                                   AND rj.race_id = :race";
+                                   AND r.id = :race_id";
 
-            $params['race'] = $this->race_id;
+            $params['race_id'] = $this->race_id;
         }
 
         $sql['middle_end'] .= ") DESC
