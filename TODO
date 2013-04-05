@@ -1,3 +1,6 @@
+- Damn it, have to modify the initial job logic. Can't just tally up stats; have to go outside of the current row's job and examine whether all priority stats can be maxed with this initial job BY OTHER AVAILABLE JOBS. For instance, the pure Atk/Spd sweeper should be rolled as a Trickster; current logic will never choose trickster, will always choose master monk since there is a significantly higher total of priority points, but that's wrong, for two reasons. Atk is very easy to come by as a Bangaa, and the algorithm should see that (incorporate Atk_max_growth) but also because rolling is the best chance to maximize a stat like Spd where you can get straight up nothing over and over while leveling. It's possible the only way to max both Atk and Spd is to roll as Trickster. Grrr
+
+
 - once algorithm is done, implement Pakxenon's algorithm anyway, and compare the two to see how many points I'm eking out
 
 - what about weighting in the query for secondary vs tertiary vs quaternary stats?

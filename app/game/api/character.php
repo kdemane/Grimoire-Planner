@@ -132,6 +132,8 @@ class character
         // times to actually incur the randomness
         for ($i = 0; $i < ($level - 1); $i++)
             $this->_level();
+
+        $this->display(); die;
     }
 
     /**

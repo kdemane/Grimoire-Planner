@@ -16,9 +16,12 @@ require_once SERVER_ROOT . 'game/api/character.php';
 $race = 'Bangaa';
 
 
+// $stat_priorities = array(0 => 'Atk',
+//                          1 => 'Spd',
+//                          2 => 'Def');
+
 $stat_priorities = array(0 => 'Atk',
-                         1 => 'Spd',
-                         2 => 'Def');
+                         1 => 'Spd');
 
 $c = new character($race, $stat_priorities);
 

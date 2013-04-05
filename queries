@@ -1,3 +1,415 @@
+Pick the job where:
+- after leveling in this job, there exists at least one job that will still allow you to max the primary stat
+- you will NOT be exceeding the max for the main stat
+  - unless the ratios for the other priority stats in the exceeding-main-max job are STILL higher than any other job
+    - there should be another weight, for how far above/below the ratio each stat is
+
+- the priority stat with the lowest ratio gets the highest growth
+  - as long as the other stats are not totally compromised
+    - maybe a low threshold for priority stats.. ?
+
+FUCK I need to even go back to the drawing board with the initial job query
+
+  SELECT v2.race_job_id
+       , v2.job_id
+       , v2.job
+    FROM (SELECT rj.id race_job_id
+               , j.id job_id
+               , j.name job
+               , v.*
+               , rjs_Atk.growth Atk_growth
+               , rjs_Spd.growth Spd_growth
+               , rjs_Def.growth Def_growth
+               , (rjs_Atk.growth / v.Atk_growth_required_to_max) Atk_ratio
+               , (rjs_Spd.growth / v.Spd_growth_required_to_max) Spd_ratio
+               , (rjs_Def.growth / v.Def_growth_required_to_max) Def_ratio
+               , (SELECT MAX(growth)
+                    FROM race_job_stat rjs
+                    JOIN race_job rj
+                      ON rjs.race_job_id = rj.id
+                   WHERE rj.race_id = 1
+                     AND rjs.stat_id = 4) Atk_max_growth
+            FROM race_job rj
+            JOIN job j
+              ON rj.job_id = j.id
+            JOIN race_job_stat rjs_Atk
+              ON rj.id = rjs_Atk.race_job_id
+            JOIN race_job_stat rjs_Spd
+              ON rj.id = rjs_Spd.race_job_id
+            JOIN race_job_stat rjs_Def
+              ON rj.id = rjs_Def.race_job_id
+            JOIN (SELECT 585 Atk_left
+                       , 65 Spd_left
+                       , 680 Def_left
+                       , 8.4783 Atk_growth_required_to_max
+                       , 0.9420 Spd_growth_required_to_max
+                       , 9.8551 Def_growth_required_to_max) v
+           WHERE rj.race_id = 1
+             AND rjs_Atk.stat_id = 4
+             AND rjs_Spd.stat_id = 3
+             AND rjs_Def.stat_id = 5) v2
+   WHERE (((v2.Atk_left - v2.Atk_growth) / 68) <= v2.Atk_max_growth)
+ORDER BY
+;
+
+
+
+
+
+
+
+
+SELECT rj.id race_job_id
+     , j.id job_id
+     , j.name job
+     , v.*
+     , rjs_Atk.growth Atk_growth
+     , rjs_Spd.growth Spd_growth
+     , rjs_Def.growth Def_growth
+     , (rjs_Atk.growth / v.Atk_growth_required_to_max) Atk_ratio
+     , (rjs_Spd.growth / v.Spd_growth_required_to_max * 5 / 3) Spd_ratio
+     , (rjs_Def.growth / v.Def_growth_required_to_max) Def_ratio
+     , (SELECT MAX(growth)
+          FROM race_job_stat rjs
+          JOIN race_job rj
+            ON rjs.race_job_id = rj.id
+         WHERE rj.race_id = 1
+           AND rjs.stat_id = 4) Atk_max_growth
+  FROM race_job rj
+  JOIN job j
+    ON rj.job_id = j.id
+  JOIN race_job_stat rjs_Atk
+    ON rj.id = rjs_Atk.race_job_id
+  JOIN race_job_stat rjs_Spd
+    ON rj.id = rjs_Spd.race_job_id
+  JOIN race_job_stat rjs_Def
+    ON rj.id = rjs_Def.race_job_id
+  JOIN (SELECT 585 Atk_left
+             , 65 Spd_left
+             , 680 Def_left
+             , (585 / 69) Atk_growth_required_to_max
+             , (65 / 69) Spd_growth_required_to_max
+             , (680 / 69) Def_growth_required_to_max) v
+ WHERE rj.race_id = 1
+   AND rjs_Atk.stat_id = 4
+   AND rjs_Spd.stat_id = 3
+   AND rjs_Def.stat_id = 5\G
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  SELECT v.race_job_id
+       , v.job_id
+       , v.job
+       , v.r_Atk
+       , v.r_Spd
+       , v.r_Def
+       , diminishing_returns(10 * v.r_Atk, 3) d_Atk
+       , diminishing_returns(10 * v.r_Spd, 3) d_Spd
+       , diminishing_returns(10 * v.r_Def, 3) d_Def
+       , (diminishing_returns(10 * v.r_Atk, 3) +
+          diminishing_returns(10 * v.r_Spd, 3) +
+          diminishing_returns(10 * v.r_Def, 3)) r_prio
+    FROM (SELECT rj.id race_job_id
+               , rj.job_id
+               , j.name job
+               , (rjs_Atk.growth /
+                  ((999 - " . $this->Atk . ") / " . $ll . ")) r_Atk
+               , (rjs_Spd.growth /
+                  ((150 - " . $this->Spd . ") / " . $ll . ") * 5 / 3) r_Spd
+               , (rjs_Def.growth /
+                  ((999 - " . $this->Def . ") / " . $ll . ")) r_Def
+            FROM race_job rj
+            JOIN job j
+              ON rj.job_id = j.id
+            JOIN race_job_stat rjs_Atk
+              ON rj.id = rjs_Atk.race_job_id
+            JOIN race_job_stat rjs_Spd
+              ON rj.id = rjs_Spd.race_job_id
+            JOIN race_job_stat rjs_Def
+              ON rj.id = rjs_Def.race_job_id
+           WHERE rjs_Atk.stat_id = 4
+             AND rjs_Spd.stat_id = 3
+             AND rjs_Def.stat_id = 5
+             AND rj.race_id = 1) v
+ORDER BY r_prio DESC
+   LIMIT 1;
+
+
+SELECT v2.race_job_id
+     , v2.job_id
+     , v2.job
+     , s.name stat
+     , rjs.growth
+  FROM (SELECT v.race_job_id
+             , v.job_id
+             , v.job
+             , (abs(1 - r_Atk) + abs(1 - r_Spd) + abs(1 - r_Def)) foo
+          FROM (SELECT rj.id race_job_id
+                     , rj.job_id
+                     , j.name job
+                     , (rjs_Atk.growth /
+                        ((999 - 410) / 69)) r_Atk
+                     , (rjs_Spd.growth /
+                        ((150 - 77) / 69) * 5 / 3) r_Spd
+                     , (rjs_Def.growth /
+                        ((999 - 309) / 69)) r_Def
+                  FROM race_job rj
+                  JOIN job j
+                    ON rj.job_id = j.id
+                  JOIN race_job_stat rjs_Atk
+                    ON rj.id = rjs_Atk.race_job_id
+                  JOIN race_job_stat rjs_Spd
+                    ON rj.id = rjs_Spd.race_job_id
+                  JOIN race_job_stat rjs_Def
+                    ON rj.id = rjs_Def.race_job_id
+                 WHERE rjs_Atk.stat_id = 4
+                   AND rjs_Spd.stat_id = 3
+                   AND rjs_Def.stat_id = 5
+                   AND rj.race_id = 1) v
+      ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             , FLOOR(r_Atk) DESC
+             , r_prio DESC
+         LIMIT 1) v2
+  JOIN race_job_stat rjs
+    ON v2.race_job_id = rjs.race_job_id
+  JOIN stat s
+    ON rjs.stat_id = s.id;
+
+
+THIS IS THE REAL INITIAL JOB QUERY
+----------------------------------
+SELECT v2.race_job_id
+     , v2.race_id
+     , v2.race
+     , v2.job_id
+     , v2.job
+     , s.name stat
+     , rjs.initial
+  FROM (SELECT v.race_job_id
+             , v.race_id
+             , v.race
+             , v.job_id
+             , v.job
+             , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
+          FROM (SELECT rj.id race_job_id
+                     , rj.race_id
+                     , r.name race
+                     , rj.job_id
+                     , j.name job
+                     , (rjs_Atk.growth /
+                        ((999 - rjs_Atk.initial) / 98)) r_Atk
+                     , (rjs_Spd.growth /
+                        ((150 - rjs_Spd.initial) / 98) * 5 / 3) r_Spd
+                     , (rjs_Def.growth /
+                        ((999 - rjs_Def.initial) / 98)) r_Def
+                  FROM race_job rj
+                  JOIN race r
+                    ON rj.race_id = r.id
+                  JOIN job j
+                    ON rj.job_id = j.id
+                  JOIN race_job_stat rjs_Atk
+                    ON rj.id = rjs_Atk.race_job_id
+                  JOIN race_job_stat rjs_Spd
+                    ON rj.id = rjs_Spd.race_job_id
+                  JOIN race_job_stat rjs_Def
+                    ON rj.id = rjs_Def.race_job_id
+                 WHERE rjs_Atk.stat_id = 4
+                   AND rjs_Spd.stat_id = 3
+                   AND rjs_Def.stat_id = 5
+                   AND r.id = 1) v
+      ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             , FLOOR(r_Atk) DESC
+             , r_prio DESC
+         LIMIT 1) v2
+  JOIN race_job_stat rjs
+    ON v2.race_job_id = rjs.race_job_id
+  JOIN stat s
+    ON rjs.stat_id = s.id;
+
+
+SELECT v2.race_id
+     , v2.job_id
+     , s.name
+     , rjs.initial
+  FROM (SELECT v.race_job_id
+             , v.race_id
+             , v.job_id
+             , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
+          FROM (SELECT rj.id race_job_id
+                     , rj.race_id
+                     , rj.job_id
+                     , (rjs_Atk.growth / ((999 - rjs_Atk.initial) / 98)) r_Atk
+                     , (rjs_Spd.growth / ((150 - rjs_Spd.initial) / 98) * 5 / 3) r_Spd
+                     , (rjs_Def.growth / ((999 - rjs_Def.initial) / 98)) r_Def
+                  FROM race_job rj
+                  JOIN race_job_stat rjs_Atk
+                    ON rj.id = rjs_Atk.race_job_id
+                  JOIN race_job_stat rjs_Spd
+                    ON rj.id = rjs_Spd.race_job_id
+                  JOIN race_job_stat rjs_Def
+                    ON rj.id = rjs_Def.race_job_id
+                 WHERE rjs_Atk.stat_id = 4
+                   AND rjs_Spd.stat_id = 3
+                   AND rjs_Def.stat_id = 5
+                   AND rj.race_id = 1) v
+      ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             , FLOOR(r_Atk) DESC
+             , r_prio DESC
+         LIMIT 1) v2
+  JOIN race_job_stat rjs
+    ON v2.race_job_id = rjs.race_job_id
+  JOIN stat s
+    ON rjs.stat_id = s.id;
+
+
+SELECT v2.race_id
+     , v2.job_id
+     , s.name
+     , rjs.initial
+  FROM (SELECT v.race_job_id
+             , v.race_id
+             , v.job_id
+             , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
+          FROM (SELECT rj.id race_job_id
+                     , rj.race_id
+                     , rj.job_id
+                     , (rjs_Atk.growth / ((999 - rjs_Atk.initial) / 98)) r_Atk
+                     , (rjs_Spd.growth / ((150 - rjs_Spd.initial) / 98) * 5 / 3) r_Spd
+                     , (rjs_Def.growth / ((999 - rjs_Def.initial) / 98)) r_Def
+                  FROM race_job rj
+                  JOIN race_job_stat rjs_Atk
+                    ON rj.id = rjs_Atk.race_job_id
+                  JOIN race_job_stat rjs_Spd
+                    ON rj.id = rjs_Spd.race_job_id
+                  JOIN race_job_stat rjs_Def
+                    ON rj.id = rjs_Def.race_job_id
+                 WHERE rjs_Atk.stat_id = 4
+                   AND rjs_Spd.stat_id = 3
+                   AND rjs_Def.stat_id = 5
+                   AND rj.race_id = 1) v
+      ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             , FLOOR(r_Atk) DESC
+             , r_prio DESC
+         LIMIT 1) v2
+  JOIN race_job_stat rjs
+    ON v2.race_job_id = rjs.race_job_id
+  JOIN stat s
+    ON rjs.stat_id = s.id;
+
+
+
+SELECT v2.race_id
+     , v2.job_id
+     , s.name
+     , rjs.initial
+  FROM (SELECT v.race_job_id
+             , v.race_id
+             , v.job_id
+             , (v.r_Atk + (v.r_Spd * 0.95) + (v.r_Def * 0.9)) r_prio
+          FROM (SELECT rj.id race_job_id
+                     , rj.race_id
+                     , rj.job_id
+                     , (rjs_Atk.growth / ((999 - rjs_Atk.initial) / 98)) r_Atk
+                     , (((rjs_Spd.growth / ((150 - rjs_Spd.initial) / 98) * 5) / 3)) r_Spd
+                     , (rjs_Def.growth / ((999 - rjs_Def.initial) / 98)) r_Def
+                  FROM race_job rj
+                  JOIN race_job_stat rjs_Atk
+                    ON rj.id = rjs_Atk.race_job_id
+                  JOIN race_job_stat rjs_Spd
+                    ON rj.id = rjs_Spd.race_job_id
+                  JOIN race_job_stat rjs_Def
+                    ON rj.id = rjs_Def.race_job_id
+                 WHERE rjs_Atk.stat_id = 4
+                   AND rjs_Spd.stat_id = 3
+                   AND rjs_Def.stat_id = 5
+                   AND rj.race_id = 1) v
+      ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             , FLOOR(r_Atk) DESC
+             , r_prio DESC
+         LIMIT 1) v2
+  JOIN race_job_stat rjs
+    ON v2.race_job_id = rjs.race_job_id
+  JOIN stat s
+    ON rjs.stat_id = s.id;
+
+
+  SELECT v.race_id
+       , v.job_id
+       , (v.r_Atk + v.r_Spd + v.r_Def) r_prio
+    FROM (SELECT rj.race_id
+              , rj.job_id
+               , (rjs_Atk.growth / ((999 - rjs_Atk.initial) / 98)) r_Atk
+               , (((rjs_Spd.growth / ((150 - rjs_Spd.initial) / 98) * 5) / 3)) r_Spd
+               , (rjs_Def.growth / ((999 - rjs_Def.initial) / 98)) r_Def
+            FROM race_job rj
+            JOIN race_job_stat rjs_Atk
+              ON rj.id = rjs_Atk.race_job_id
+            JOIN race_job_stat rjs_Spd
+              ON rj.id = rjs_Spd.race_job_id
+            JOIN race_job_stat rjs_Def
+              ON rj.id = rjs_Def.race_job_id
+           WHERE rjs_Atk.stat_id = :Atk
+             AND rjs_Spd.stat_id = :Spd
+             AND rjs_Def.stat_id = :Def
+             AND rj.race_id = :race) v
+ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+       , FLOOR(r_Atk) DESC
+       , r_prio DESC
+   LIMIT 1;
+
+
   SELECT v.*
        , (v.r_Atk + v.r_Spd + v.r_Def) r_prio
     FROM (SELECT rj.id
@@ -7,6 +419,10 @@
             FROM race_job rj
             JOIN race r
               ON rj.race_id = r.id
+            JOIN job j
+              ON rj.job_id = j.id
+            JOIN race_job_stat rjs
+              ON rj.id = rjs.race_job_id
             JOIN race_job_stat rjs_Atk
               ON rj.id = rjs_Atk.race_job_id
             JOIN race_job_stat rjs_Spd
@@ -16,8 +432,9 @@
            WHERE r.id = 1
              AND rjs_Atk.stat_id = 4
              AND rjs_Spd.stat_id = 3
-             AND rjs_Def.stat_id = 5) v
-ORDER BY (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)) DESC
+             AND rjs_Def.stat_id = 5
+        GROUP BY rj.id) v
+ORDER BY (5 * (FLOOR(r_Atk) && FLOOR(r_Spd) && FLOOR(r_Def)))
        , FLOOR(r_Atk) DESC
        , r_prio DESC;
 
