@@ -1,5 +1,5 @@
 <?
-define('GP_ROOT', '/var/www/html/Grimoire-Planner/');
+define('GP_ROOT', '/var/www/html/git/Grimoire-Planner/');
 
 define('SERVER_ROOT', GP_ROOT . 'app/');
 
